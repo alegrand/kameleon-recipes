@@ -150,9 +150,11 @@ setup:
       - apt-get_out: install zstd lbzip2 ruby iproute2
     - extract_rootfs:
       - exec_out: tar -C $${rootfs_container_work_dir} --zstd -xvf $${g5k_env_std_tarball_file}
-  - apply_l4t_binaries_and_fix_os:
+  - apply_l4t_binaries:
     - apply_l4t_binaries:
       - exec_out: $${l4t_dir}/apply_binaries.sh -r $${rootfs_container_work_dir} --target-overlay
+  - setup_system_fs_in_chroot
+  - fix_os_after_nvidia_script:
     - rebuild_ld_cache:
       - exec_in: ldconfig
     - disable_nvidia_first_boot:
@@ -163,20 +165,19 @@ setup:
       - exec_in: systemctl disable nv-l4t-bootloader-config.service
     - configure_nvpmodel_all_core:
       - exec_in: |
-            set -e
-            dpkg-divert --no-rename /etc/systemd/nvpmodel.sh
-            sed -i.distrib -e 's@^\([[:space:]]*/usr/sbin/nvpmodel\) -f /etc/nvpmodel.conf@&\n\1 -m 7@' /etc/systemd/nvpmodel.sh
+          set -e
+          dpkg-divert --no-rename /etc/systemd/nvpmodel.sh
+          sed -i.distrib -e 's@^\([[:space:]]*/usr/sbin/nvpmodel\) -f /etc/nvpmodel.conf@&\n\1 -m 7@' /etc/systemd/nvpmodel.sh
     - nfsrootify_dhclient_script:
-      - breakpoint
       - exec_in: |
-            set -e
-            dpkg-divert --no-rename /sbin/dhclient-script
-            sed -i.distrib -e '214,224s/^/#G5Knfsroot/;231,299s/^/#G5Knfsroot/;306,321s/^/#G5Knfsroot/;326,379s/^/#G5Knfsroot/;' /sbin/dhclient-script
+          set -e
+          dpkg-divert --no-rename /sbin/dhclient-script
+          sed -i.distrib -e '214,224s/^/#G5Knfsroot/;231,299s/^/#G5Knfsroot/;306,321s/^/#G5Knfsroot/;326,379s/^/#G5Knfsroot/;' /sbin/dhclient-script
     - truify_ipmitool:
       - exec_in: |
-            set -e
-            dpkg-divert --rename /usr/bin/ipmitool
-            ln -s /bin/true /usr/bin/ipmitool
+          set -e
+          dpkg-divert --rename /usr/bin/ipmitool
+          ln -s /bin/true /usr/bin/ipmitool
 #  - do_remove_and_do_post_build:
 #    - g5k-postinstall:
 #      - exec_out: |
