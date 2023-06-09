@@ -1,5 +1,4 @@
 - swap_to_the_new_zfs_rootfs:
-  - on_checkpoint: redo
   - exec_local: |
       set -e
       # Stop the docker container so that we can change the rootfs
