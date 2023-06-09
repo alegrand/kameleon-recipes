@@ -150,25 +150,48 @@ setup:
       - apt-get_out: install zstd lbzip2 ruby iproute2
     - extract_rootfs:
       - exec_out: tar -C $${rootfs_container_work_dir} --zstd -xvf $${g5k_env_std_tarball_file}
+  - apply_l4t_binaries_and_fix_os:
     - apply_l4t_binaries:
       - exec_out: $${l4t_dir}/apply_binaries.sh -r $${rootfs_container_work_dir} --target-overlay
+    - rebuild_ld_cache:
+      - exec_in: ldconfig
+    - disable_nvidia_first_boot:
+      - exec_in: rm /etc/nv/nvfirstboot
     - disable_unwanted_tegra_systemd:
       - exec_in: systemctl disable nvargus-daemon.service
       - exec_in: systemctl disable nv-l4t-usb-device-mode.service
-    - g5k-postinstall:
-      - exec_out: |
-          set -e
-          mkdir $${workdir}/tmp
-          tar -C $${workdir}/tmp -zxf $${g5k_postinstall_tarball_file}
-          sed -i -e 's/$myjson = {/$myjson = { "architecture" => {},/' $${workdir}/tmp/g5k-postinstall
-          KADEPLOY_CLUSTER="estats" KADEPLOY_DEPLOY_PART="/dev/sda3" KADEPLOY_BLOCK_DEVICE="/dev/sda" KADEPLOY_DEPLOY_PART_NUM="3" KADEPLOY_SWAP_PART_NUM="1" KADEPLOY_PROD_PART_NUM="2" KADEPLOY_TMP_PART_NUM="5" KADEPLOY_PREPOST_EXTRACTION_DIR="$${workdir}/tmp" KADEPLOY_TMP_DIR="/tmp" KADEPLOY_ENV="debian11-arm-std" KADEPLOY_ENV_KERNEL="/vmlinuz" KADEPLOY_ENV_INITRD="/initrd.img" KADEPLOY_ENV_KERNEL_PARAMS="console=tty0 console=ttyS0,38400n8 net.ifnames=0 biosdevname=0" KADEPLOY_ENV_HYPERVISOR="" KADEPLOY_ENV_HYPERVISOR_PARAMS="" KADEPLOY_OS_KIND="linux" KADEPLOY_PART_TYPE="83" KADEPLOY_FS_TYPE="ext4" KADEPLOY_ENV_EXTRACTION_DIR=/nvidia/Linux_for_Tegra/rootfs/ $${workdir}/tmp/g5k-postinstall --no-ref-api --fstab nfs --net debian
-          rm -r $${workdir}/tmp
-    - dive_in:
-    #  - apt-get_out: install libncurses-dev
-      - exec_local: |
-          echo "kadeploy command:"
-          echo KADEPLOY_CLUSTER="estats" KADEPLOY_DEPLOY_PART="/dev/sda3" KADEPLOY_BLOCK_DEVICE="/dev/sda" KADEPLOY_DEPLOY_PART_NUM="3" KADEPLOY_SWAP_PART_NUM="1" KADEPLOY_PROD_PART_NUM="2" KADEPLOY_TMP_PART_NUM="5" KADEPLOY_PREPOST_EXTRACTION_DIR="$${workdir}/tmp" KADEPLOY_TMP_DIR="/tmp" KADEPLOY_ENV="debian11-arm-std" KADEPLOY_ENV_KERNEL="/vmlinuz" KADEPLOY_ENV_INITRD="/initrd.img" KADEPLOY_ENV_KERNEL_PARAMS="console=tty0 console=ttyS0,38400n8 net.ifnames=0 biosdevname=0" KADEPLOY_ENV_HYPERVISOR="" KADEPLOY_ENV_HYPERVISOR_PARAMS="" KADEPLOY_OS_KIND="linux" KADEPLOY_PART_TYPE="83" KADEPLOY_FS_TYPE="ext4" KADEPLOY_ENV_EXTRACTION_DIR=/nvidia/Linux_for_Tegra/rootfs/ $${workdir}/tmp/g5k-postinstall --no-ref-api --fstab nfs --net debian
+      - exec_in: systemctl disable nv-l4t-bootloader-config.service
+    - configure_nvpmodel_all_core:
+      - exec_in: |
+            set -e
+            dpkg-divert --no-rename /etc/systemd/nvpmodel.sh
+            sed -i.distrib -e 's@^\([[:space:]]*/usr/sbin/nvpmodel\) -f /etc/nvpmodel.conf@&\n\1 -m 7@' /etc/systemd/nvpmodel.sh
+    - nfsrootify_dhclient_script:
       - breakpoint
+      - exec_in: |
+            set -e
+            dpkg-divert --no-rename /sbin/dhclient-script
+            sed -i.distrib -e '214,224s/^/#G5Knfsroot/;231,299s/^/#G5Knfsroot/;306,321s/^/#G5Knfsroot/;326,379s/^/#G5Knfsroot/;' /sbin/dhclient-script
+    - truify_ipmitool:
+      - exec_in: |
+            set -e
+            dpkg-divert --rename /usr/bin/ipmitool
+            ln -s /bin/true /usr/bin/ipmitool
+#  - do_remove_and_do_post_build:
+#    - g5k-postinstall:
+#      - exec_out: |
+#          set -e
+#          mkdir $${workdir}/tmp
+#          tar -C $${workdir}/tmp -zxf $${g5k_postinstall_tarball_file}
+#          sed -i -e 's/$myjson = {/$myjson = { "architecture" => {},/' $${workdir}/tmp/g5k-postinstall
+#          KADEPLOY_CLUSTER="estats" KADEPLOY_DEPLOY_PART="/dev/sda3" KADEPLOY_BLOCK_DEVICE="/dev/sda" KADEPLOY_DEPLOY_PART_NUM="3" KADEPLOY_SWAP_PART_NUM="1" KADEPLOY_PROD_PART_NUM="2" KADEPLOY_TMP_PART_NUM="5" KADEPLOY_PREPOST_EXTRACTION_DIR="$${workdir}/tmp" KADEPLOY_TMP_DIR="/tmp" KADEPLOY_ENV="debian11-arm-std" KADEPLOY_ENV_KERNEL="/vmlinuz" KADEPLOY_ENV_INITRD="/initrd.img" KADEPLOY_ENV_KERNEL_PARAMS="console=tty0 console=ttyS0,38400n8 net.ifnames=0 biosdevname=0" KADEPLOY_ENV_HYPERVISOR="" KADEPLOY_ENV_HYPERVISOR_PARAMS="" KADEPLOY_OS_KIND="linux" KADEPLOY_PART_TYPE="83" KADEPLOY_FS_TYPE="ext4" KADEPLOY_ENV_EXTRACTION_DIR=/nvidia/Linux_for_Tegra/rootfs/ $${workdir}/tmp/g5k-postinstall --no-ref-api --fstab nfs --net debian
+#          rm -r $${workdir}/tmp
+#    - dive_in:
+#    #  - apt-get_out: install libncurses-dev
+#      - exec_local: |
+#          echo "kadeploy command:"
+#          echo KADEPLOY_CLUSTER="estats" KADEPLOY_DEPLOY_PART="/dev/sda3" KADEPLOY_BLOCK_DEVICE="/dev/sda" KADEPLOY_DEPLOY_PART_NUM="3" KADEPLOY_SWAP_PART_NUM="1" KADEPLOY_PROD_PART_NUM="2" KADEPLOY_TMP_PART_NUM="5" KADEPLOY_PREPOST_EXTRACTION_DIR="$${workdir}/tmp" KADEPLOY_TMP_DIR="/tmp" KADEPLOY_ENV="debian11-arm-std" KADEPLOY_ENV_KERNEL="/vmlinuz" KADEPLOY_ENV_INITRD="/initrd.img" KADEPLOY_ENV_KERNEL_PARAMS="console=tty0 console=ttyS0,38400n8 net.ifnames=0 biosdevname=0" KADEPLOY_ENV_HYPERVISOR="" KADEPLOY_ENV_HYPERVISOR_PARAMS="" KADEPLOY_OS_KIND="linux" KADEPLOY_PART_TYPE="83" KADEPLOY_FS_TYPE="ext4" KADEPLOY_ENV_EXTRACTION_DIR=/nvidia/Linux_for_Tegra/rootfs/ $${workdir}/tmp/g5k-postinstall --no-ref-api --fstab nfs --net debian
+#      - breakpoint
 export:
   - export_zfs_rootfs
   - export_docker_image_ready_to_flash:
