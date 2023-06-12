@@ -40,32 +40,56 @@ setup:
   - install_conda_shits:
     - mamba_installs:
       - exec_out: |
-          mamba install -y -c conda-forge fitsio
-          mamba install -y -c bioconda snakemake
+          sudo -u jovyan -i /opt/conda/bin/mamba install -y -c conda-forge fitsio
+          sudo -u jovyan -i /opt/conda/bin/mamba install -y -c bioconda snakemake
+          sudo -u jovyan -i /opt/conda/bin/mamba clean -y -a 
   - install_gitguix_bits:
     - apt_installs:
       - apt-get_out: update
       - apt-get_out: install git-annex
       - apt-get_out: install guix
       - apt-get_out: install daemonize
+      - apt-get_out: clean
+      - apt-get_out: autoremove --yes
   - configure_user_jovyan:
     - configure_guix:
       - exec_out: |
           sudo -u jovyan mkdir -p /home/jovyan/.guix-profile
+#      - breakpoint
       - exec_out: |
           printf 'GUIX_PROFILE="/home/jovyan/.config/guix/current"\n. "$GUIX_PROFILE/etc/profile"' | \
             sudo -u jovyan tee -a /home/jovyan/.bashrc
   - configure_guix:
     - guix_pull:
       - exec_out: |
-          set -e
-          /etc/init.d/guix-daemon restart
-          guix pull
-          /etc/init.d/guix-daemon stop
+          /etc/init.d/guix-daemon start
       - exec_out: |
-          set -e
-          /etc/init.d/guix-daemon restart
-          guix package -i python-numpy -i python -i coreutils -i hello
+          sudo -u jovyan -i guix pull
+      - exec_out: |
+          /etc/init.d/guix-daemon stop
+    - guix_install:
+      - exec_out: |
+          /etc/init.d/guix-daemon start
+      - exec_out: |
+          sudo -u jovyan -i guix package -i python-numpy -i python -i coreutils -i hello
+      - exec_out: |
+          sudo -u jovyan -i guix shell --pure hello -- hello
+      - exec_out: |
+          sudo -u jovyan -i guix shell --pure coreutils -- ls
+      - exec_out: |
+          sudo -u jovyan -i guix shell --pure coreutils hello  -- ls
+      - exec_out: |
+          sudo -u jovyan -i guix shell --pure python python-numpy -- python3
+          exit()
+      - exec_out: |
+          sudo -u jovyan -i guix shell --pure python python-numpy coreutils -- ls
+      - exec_out: |
+          sudo -u jovyan -i guix shell --pure python python-numpy hello -- ls
+      - exec_out: |
+          sudo -u jovyan -i guix shell --pure python python-numpy coreutils hello -- ls
+      - exec_out: |
+          sudo -u jovyan -i guix gc
+      - exec_out: |
           /etc/init.d/guix-daemon stop
 export:
   - "@base"
