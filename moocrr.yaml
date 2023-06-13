@@ -66,12 +66,18 @@ setup:
       - exec_out: |
           sudo -u jovyan -i guix pull
       - exec_out: |
+          sudo -u jovyan -i guix pull -d
+      - exec_out: |
           /etc/init.d/guix-daemon stop
     - guix_install:
       - exec_out: |
           /etc/init.d/guix-daemon start
       - exec_out: |
           sudo -u jovyan -i guix package -i python-numpy -i python -i coreutils -i hello
+      - exec_out: |
+          sudo -u jovyan -i guix package -d
+      - exec_out: |
+          sudo -u jovyan -i guix gc
       - exec_out: |
           /etc/init.d/guix-daemon stop
     - guix_shell:
