@@ -73,21 +73,18 @@ setup:
       - exec_out: |
           sudo -u jovyan -i guix package -i python-numpy -i python -i coreutils -i hello
       - exec_out: |
+          /etc/init.d/guix-daemon stop
+    - guix_shell:
+      - exec_out: |
+          /etc/init.d/guix-daemon start
+      - exec_out: |
           sudo -u jovyan -i guix shell --pure hello -- hello
-      - exec_out: |
           sudo -u jovyan -i guix shell --pure coreutils -- ls
-      - exec_out: |
           sudo -u jovyan -i guix shell --pure coreutils hello  -- ls
-      - exec_out: |
-          sudo -u jovyan -i guix shell --pure python python-numpy -- python3
-          exit()
-      - exec_out: |
+          sudo -u jovyan -i guix shell --pure python python-numpy -- python3 -c "print('hello')"
           sudo -u jovyan -i guix shell --pure python python-numpy coreutils -- ls
-      - exec_out: |
-          sudo -u jovyan -i guix shell --pure python python-numpy hello -- ls
-      - exec_out: |
+          sudo -u jovyan -i guix shell --pure python python-numpy hello -- hello
           sudo -u jovyan -i guix shell --pure python python-numpy coreutils hello -- ls
-      - exec_out: |
           sudo -u jovyan -i guix gc
       - exec_out: |
           /etc/init.d/guix-daemon stop
