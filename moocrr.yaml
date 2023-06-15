@@ -88,6 +88,7 @@ setup:
           sudo -u jovyan -i guix shell --pure hello -- hello
           sudo -u jovyan -i guix shell --pure coreutils -- ls
           sudo -u jovyan -i guix shell --pure coreutils hello  -- ls
+          sudo -u jovyan -i guix shell --pure hello coreutils  -- ls
           sudo -u jovyan -i guix shell --pure python python-numpy -- python3 -c "print('hello')"
           sudo -u jovyan -i guix shell --pure python python-numpy coreutils -- ls
           sudo -u jovyan -i guix shell --pure python python-numpy hello -- hello
