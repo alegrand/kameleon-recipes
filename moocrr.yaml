@@ -42,6 +42,7 @@ setup:
       - exec_out: |
           sudo -u jovyan -i /opt/conda/bin/mamba install -y -c conda-forge fitsio
           sudo -u jovyan -i /opt/conda/bin/mamba install -y -c bioconda snakemake
+          sudo -u jovyan -i /opt/conda/bin/mamba install -y isoweek
           sudo -u jovyan -i /opt/conda/bin/mamba clean -y -a 
   - install_gitguix_bits:
     - apt_installs:
