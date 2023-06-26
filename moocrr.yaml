@@ -42,6 +42,7 @@ setup:
       - exec_out: |
           sudo -u jovyan -i /opt/conda/bin/mamba install -y -c conda-forge fitsio
           sudo -u jovyan -i /opt/conda/bin/mamba install -y -c bioconda snakemake
+          sudo -u jovyan -i /opt/conda/bin/mamba install -y isoweek
           sudo -u jovyan -i /opt/conda/bin/mamba clean -y -a 
   - install_gitguix_bits:
     - apt_installs:
@@ -49,6 +50,8 @@ setup:
       - apt-get_out: install git-annex
       - apt-get_out: install guix
       - apt-get_out: install daemonize
+      - apt-get_out: install graphviz
+      - apt-get_out: install recutils
       - apt-get_out: clean
       - apt-get_out: autoremove --yes
   - configure_user_jovyan:
@@ -66,12 +69,18 @@ setup:
       - exec_out: |
           sudo -u jovyan -i guix pull
       - exec_out: |
+          sudo -u jovyan -i guix pull -d
+      - exec_out: |
           /etc/init.d/guix-daemon stop
     - guix_install:
       - exec_out: |
           /etc/init.d/guix-daemon start
       - exec_out: |
           sudo -u jovyan -i guix package -i python-numpy -i python -i coreutils -i hello
+      - exec_out: |
+          sudo -u jovyan -i guix package -d
+      - exec_out: |
+          sudo -u jovyan -i guix gc
       - exec_out: |
           /etc/init.d/guix-daemon stop
     - guix_shell:
@@ -81,6 +90,7 @@ setup:
           sudo -u jovyan -i guix shell --pure hello -- hello
           sudo -u jovyan -i guix shell --pure coreutils -- ls
           sudo -u jovyan -i guix shell --pure coreutils hello  -- ls
+          sudo -u jovyan -i guix shell --pure hello coreutils  -- ls
           sudo -u jovyan -i guix shell --pure python python-numpy -- python3 -c "print('hello')"
           sudo -u jovyan -i guix shell --pure python python-numpy coreutils -- ls
           sudo -u jovyan -i guix shell --pure python python-numpy hello -- hello
