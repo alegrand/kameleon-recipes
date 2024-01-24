@@ -52,6 +52,9 @@ setup:
       - apt-get_out: install daemonize
       - apt-get_out: install graphviz
       - apt-get_out: install recutils
+      - apt-get_out: install imagemagick
+      - apt-get_out: install poppler-utils
+      - apt-get_out: install file
       - apt-get_out: clean
       - apt-get_out: autoremove --yes
   - configure_user_jovyan:
